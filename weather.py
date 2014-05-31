@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+This is a simple script for getting weather information
+from remote server(openweathermap.org in this case)
+"""
+
 from __future__ import print_function
 import requests
 import json
@@ -13,11 +18,11 @@ __author__ = "Konrad Wasowicz"
 __license__ = "BSD"
 
 
-req = requests.get("http://api.openweathermap.org/data/2.5/weather?q=London,uk&units=metric&")
-
-
-
 class WeatherApp(object):
+    
+    """
+    Main class for getting weather information
+    """
 
     API = "http://api.openweathermap.org/data/2.5/weather"
 
@@ -25,10 +30,16 @@ class WeatherApp(object):
         self.config = config
 
     def get_location(self):
+
+        # Get location based on ip address
+        # Not very reliable
+
         addr_req = requests.get("http://freegeoip.net/json")
         return addr_req.json()
 
     def parse_request(self, location, system, **kwargs):
+
+        # Parse address to be used in request
 
         addr = self.API
         if not system:
@@ -37,6 +48,8 @@ class WeatherApp(object):
         return addr
 
     def process_request(self, address):
+
+        # Process and return the response
 
         try:
             req = requests.get(address)
@@ -47,15 +60,18 @@ class WeatherApp(object):
 
 
     def get_info(self):
+
+        # Main method for returning weather information
+
         if "location" not in self.config.keys():
             try:
                 loc = self.get_location()
+                location = loc["city"] or loc["region_name"] or loc["country_name"]
             except Exception as e:
-                print("Unable to retrieve location data from freegeoip.net,\n\
-                        Enter your location manually or try again.")
+                print("Unable to retrieve location data from freegeoip.net,\n Enter your location manually or try again.")
         else:
-            loc = self.config["location"]
-        request_address = self.parse_request(loc, self.config.get("system", None))
+            location = self.config["location"]
+        request_address = self.parse_request(location, self.config.get("system", None))
         response = self.process_request(request_address)
         print("Location:", response["name"])
         print("Weather: ", response["weather"][0]["main"])
@@ -75,11 +91,11 @@ def main():
 
     for field in options:
         key, val = field
-        if key in ("l", "--location"):
+        if key in ("-l", "--location"):
             config["location"] = val
-        if key in ("s", "--system"):
+        if key in ("-s", "--system"):
             config["system"] = val
-        if key in ("a", "--additional_fields"):
+        if key in ("-a", "--additional_fields"):
             config["additional"] = val
     w = WeatherApp(config)
     w.get_info()
