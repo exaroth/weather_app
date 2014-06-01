@@ -20,7 +20,7 @@ __license__ = "BSD"
 
 
 class WeatherApp(object):
-    
+
     """
     Main class for getting weather information
     """
@@ -37,7 +37,8 @@ class WeatherApp(object):
             try:
                 self.location = self.get_location()
             except Exception as e:
-                print("Unable to retrieve location data from freegeoip.net,\n Enter your location manually or try again.")
+                print("Unable to retrieve location data from freegeoip.net,\n\
+                      Enter your location manually or try again.")
         else:
             self.location = self.config["location"]
         if "forecast" in kwargs.keys() and kwargs.get("forecast") is not None:
@@ -53,7 +54,7 @@ class WeatherApp(object):
 
         return loc["city"] or loc["region_name"] or loc["country_name"]
 
-    def parse_request_addr(self, system, forecast = False):
+    def parse_request_addr(self, system, forecast=False):
 
         # Parse address to be used in request
 
@@ -80,32 +81,36 @@ class WeatherApp(object):
             print("Unable to retrieve weather data from remote server\n\
                   Error:{0}".format(str(e)))
 
-
     def get_weather_for_today(self):
 
         # Main method for returning weather information
 
         request_address = self.parse_request_addr(self.config.get("system", None))
         response = self.process_request(request_address)
-        print(u"Today:\nLocation: {0}\nWeather: {1}\nTemperature: {2} \u00b0{3}".
-           format(response["name"],\
-           response["weather"][0]["main"],\
-           response["main"]["temp"],\
-           self.config["measure"]))
+        print(u"Today:\nLocation: {0}\nWeather: {1}\nTemperature: {2} \u00b0{3}"
+              .format(response["name"],
+                      response["weather"][0]["main"],
+                      response["main"]["temp"],
+                      self.config["measure"]))
         print("==============================")
 
     def get_forecast(self):
 
-        # Get forecasr for n days in the future
+        # Get forecast for n days in the future
 
-        request_address = self.parse_request_addr(self.config.get("system", None), forecast=self.forecast_count)
+        request_address = self.parse_request_addr(self.config.get("system", None),
+                                                  forecast=self.forecast_count)
         response = self.process_request(request_address)
         output = response["list"][1:self.forecast_count]
         for key in output:
             date = datetime.fromtimestamp(key["dt"]).strftime("%A %d %Y")
             weather = key["weather"][0]["main"]
             temp = int(key["temp"]["day"])
-            print(u"{0}\nWeather: {1}\nTemperature: {2} \u00b0{3}\n".format(date, weather, temp,self.config["measure"]))
+            print(u"{0}\nWeather: {1}\nTemperature: {2} \u00b0{3}\n"
+                  .format(date,
+                          weather,
+                          temp,
+                          self.config["measure"]))
 
 
 def main():
@@ -114,7 +119,11 @@ def main():
     config = dict()
 
     try:
-        options, remainder = getopt.getopt(args,"l:a:s:f:", ["location=", "system=", "additional_fields=", "forecast="])
+        options, remainder = getopt.getopt(args, "l:a:s:f:",
+                                           ["location=",
+                                            "system=",
+                                            "additional_fields=",
+                                            "forecast="])
     except getopt.GetoptError as err:
         sys.exit(2)
 
@@ -129,10 +138,11 @@ def main():
             config["additional"] = val
         if key in ("-f", "--forecast"):
             forecast = val
-        
-    w = WeatherApp(config, forecast = forecast)
+
+    w = WeatherApp(config, forecast=forecast)
     w.get_weather_for_today()
     if forecast:
         w.get_forecast()
 
-main()
+if __name__ == "__main__":
+    main()
