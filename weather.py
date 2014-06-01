@@ -7,11 +7,12 @@ from remote server(openweathermap.org in this case)
 """
 
 from __future__ import print_function
-import requests
 import json
 import sys
 import os
 import getopt
+import urllib
+
 from datetime import datetime
 
 __version__ = "0.0.1"
@@ -49,10 +50,19 @@ class WeatherApp(object):
         # Get location based on ip address
         # Not very reliable
 
-        addr_req = requests.get("http://freegeoip.net/json")
-        loc = addr_req.json()
+        response = self.get_data("http://freegeoip.net/json")
 
-        return loc["city"] or loc["region_name"] or loc["country_name"]
+        return response["city"] or response["region_name"] or response["country_name"]
+
+    def get_data(self, url):
+        try:
+            req = urllib.urlopen(url)
+            return json.loads(req.read())
+        except Exception as e:
+            print("Error occured when performing GET request, try again")
+            print("Error: {0}".format(str(e)))
+            sys.exit(2)
+
 
     def parse_request_addr(self, system, forecast=False):
 
@@ -70,23 +80,12 @@ class WeatherApp(object):
             addr += "&cnt={0}&mode=json".format(self.forecast_count)
         return addr
 
-    def process_request(self, address):
-
-        # Process and return the response
-
-        try:
-            req = requests.get(address)
-            return req.json()
-        except requests.HTTPError as e:
-            print("Unable to retrieve weather data from remote server\n\
-                  Error:{0}".format(str(e)))
-
     def get_weather_for_today(self):
 
         # Main method for returning weather information
 
         request_address = self.parse_request_addr(self.config.get("system", None))
-        response = self.process_request(request_address)
+        response = self.get_data(request_address)
         print(u"Today:\nLocation: {0}\nWeather: {1}\nTemperature: {2} \u00b0{3}"
               .format(response["name"],
                       response["weather"][0]["main"],
@@ -100,7 +99,7 @@ class WeatherApp(object):
 
         request_address = self.parse_request_addr(self.config.get("system", None),
                                                   forecast=self.forecast_count)
-        response = self.process_request(request_address)
+        response = self.get_data(request_address)
         output = response["list"][1:self.forecast_count]
         for key in output:
             date = datetime.fromtimestamp(key["dt"]).strftime("%A %d %Y")
