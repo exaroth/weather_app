@@ -12,6 +12,7 @@ import json
 import sys
 import os
 import getopt
+from datetime import datetime
 
 __version__ = "0.0.1"
 __author__ = "Konrad Wasowicz"
@@ -39,9 +40,8 @@ class WeatherApp(object):
                 print("Unable to retrieve location data from freegeoip.net,\n Enter your location manually or try again.")
         else:
             self.location = self.config["location"]
-        print(kwargs)
         if "forecast" in kwargs.keys() and kwargs.get("forecast") is not None:
-            self.forecast_count = kwargs["forecast"]
+            self.forecast_count = int(kwargs["forecast"]) + 1
 
     def get_location(self):
 
@@ -67,7 +67,6 @@ class WeatherApp(object):
         addr += "?q={0}&units={1}".format(self.location, system)
         if forecast:
             addr += "&cnt={0}&mode=json".format(self.forecast_count)
-        print(addr)
         return addr
 
     def process_request(self, address):
@@ -88,16 +87,26 @@ class WeatherApp(object):
 
         request_address = self.parse_request_addr(self.config.get("system", None))
         response = self.process_request(request_address)
-        print("Location:", response["name"])
-        print("Weather: ", response["weather"][0]["main"])
-        print("Temperature: ", response["main"]["temp"], u"\u00b0" + self.config["measure"] )
-        print("Humidity", response["main"]["humidity"])
+        print(u"Today:\nLocation: {0}\nWeather: {1}\nTemperature: {2} \u00b0{3}".
+           format(response["name"],\
+           response["weather"][0]["main"],\
+           response["main"]["temp"],\
+           self.config["measure"]))
+        print("==============================")
 
     def get_forecast(self):
 
+        # Get forecasr for n days in the future
+
         request_address = self.parse_request_addr(self.config.get("system", None), forecast=self.forecast_count)
         response = self.process_request(request_address)
-        print(response)
+        output = response["list"][1:self.forecast_count]
+        for key in output:
+            date = datetime.fromtimestamp(key["dt"]).strftime("%A %d %Y")
+            weather = key["weather"][0]["main"]
+            temp = int(key["temp"]["day"])
+            print(u"{0}\nWeather: {1}\nTemperature: {2} \u00b0{3}\n".format(date, weather, temp,self.config["measure"]))
+
 
 def main():
     args = sys.argv[1:]
@@ -109,6 +118,7 @@ def main():
     except getopt.GetoptError as err:
         sys.exit(2)
 
+    forecast = None
     for field in options:
         key, val = field
         if key in ("-l", "--location"):
@@ -119,7 +129,10 @@ def main():
             config["additional"] = val
         if key in ("-f", "--forecast"):
             forecast = val
+        
     w = WeatherApp(config, forecast = forecast)
-    w.get_forecast()
+    w.get_weather_for_today()
+    if forecast:
+        w.get_forecast()
 
 main()
